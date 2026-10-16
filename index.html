@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Witch of Rockdale - Projects</title>
+<meta name="description" content="Nineteen open projects. Each carries a targeted estimate of net present value, computed in the browser and sorted smallest to largest.">
+<meta name="robots" content="index,follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;
+  --panel:#141414;
+  --ink:#FBF9F1;        /* 18.78:1 on bg */
+  --ink-2:#C9C6BE;      /* 11.60:1 on bg */
+  --ink-3:#A8A49B;      /*  7.96:1 on bg */
+  --ink-4:#8F8B82;      /*  5.83:1 on bg */
+  --line:rgba(251,249,241,.13);
+  --line-2:rgba(251,249,241,.28);
+  /* stage state machine */
+  --s-passed:#0a0a0a;
+  --s-done:#2E6B45;
+  --s-current:#C9A227;
+  --s-stuck:#A03227;
+  --s-future:#FBF9F1;
+  --pad-x:clamp(20px,5vw,80px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Helvetica Neue",Helvetica,"Neue Haas Grotesk Display",Inter,Arial,sans-serif;
+  font-weight:300;font-size:15px;line-height:1.75;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+img,video{max-width:100%;display:block}
+button{font:inherit;color:inherit}
+h1,h2,h3,h4{font-weight:300;margin:0}
+p{margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-left:var(--pad-x);padding-right:var(--pad-x)}
+.eyebrow{font-size:9.5px;letter-spacing:.44em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+.skip{position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--bg);padding:10px 18px;z-index:99;letter-spacing:.2em;font-size:10px;text-transform:uppercase}
+.skip:focus{left:12px;top:12px}
+
+/* masthead */
+.mast{display:flex;justify-content:space-between;align-items:baseline;gap:24px;
+  padding:26px var(--pad-x) 22px;max-width:1240px;margin:0 auto;flex-wrap:wrap}
+.mast__l{font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:var(--ink)}
+.mast__r{font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--ink-4)}
+/* the hairline that does not close */
+.rule{max-width:1240px;margin:0 auto;padding:0 var(--pad-x)}
+.rule i{display:block;height:1px;background:var(--line-2);width:61.8%}
+
+/* hero video */
+.hero{padding-top:48px}
+.vid{position:relative;aspect-ratio:21/9;width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
+.vid__card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:22px;text-align:center;padding:24px;background:#000}
+.vid__card b{font-weight:300;font-size:clamp(20px,4.4vw,58px);letter-spacing:.28em;text-transform:uppercase;color:var(--ink);line-height:1.1}
+.vid__card span{font-size:9.5px;letter-spacing:.5em;text-transform:uppercase;color:var(--ink-3)}
+.vid__card i{display:block;width:88px;height:1px;background:var(--line-2)}
+.vid__v{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s linear;background:#000}
+.vid__v.is-live{opacity:1}
+.vid__cap{margin-top:14px;font-size:9.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink-4)}
+
+/* intro */
+.intro{padding-top:96px}
+.kin{font-size:clamp(34px,8.4vw,104px);line-height:.94;letter-spacing:.02em;text-transform:uppercase;
+  font-weight:200;margin:26px 0 0;display:flex;flex-wrap:wrap;column-gap:.28em}
+.kin .w{display:inline-flex}
+.kin .c{display:inline-block;will-change:transform}
+.lede{margin-top:44px;max-width:60ch;font-size:18px;line-height:1.7;color:var(--ink-2)}
+.lede b{color:var(--ink);font-weight:400}
+.stamp{margin-top:34px;display:inline-block;border:1px solid var(--line-2);padding:14px 22px;
+  font-size:10px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink)}
+.method{margin-top:56px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;
+  border-top:1px solid var(--line);padding-top:34px}
+.method h3{font-size:9.5px;letter-spacing:.42em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px}
+.method p{font-size:13.5px;line-height:1.8;color:var(--ink-2)}
+.method code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--ink);letter-spacing:.02em}
+
+/* legend */
+.legend{padding-top:88px}
+.legend__row{display:flex;flex-wrap:wrap;gap:26px 44px;margin-top:26px;border-top:1px solid var(--line);padding-top:28px}
+.legend__i{display:flex;align-items:center;gap:12px}
+.legend__i span{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-2)}
+.chip{width:26px;height:16px;display:flex;align-items:center;justify-content:center;
+  font-size:8px;line-height:1;letter-spacing:.06em;font-weight:500;flex:none}
+.chip--passed{background:var(--s-passed);color:var(--ink);border:1px solid var(--line-2)}
+.chip--done{background:var(--s-done);color:var(--ink)}
+.chip--current{background:var(--s-current);color:#0a0a0a}
+.chip--stuck{background:var(--s-stuck);color:var(--ink);border-bottom:3px dashed var(--ink)}
+.chip--future{background:var(--s-future);color:#0a0a0a}
+
+/* list */
+.list{padding-top:96px}
+.list__head{display:flex;justify-content:space-between;align-items:baseline;gap:20px;
+  border-bottom:1px solid var(--line-2);padding-bottom:16px;flex-wrap:wrap}
+.pj{display:grid;grid-template-columns:56px minmax(0,1fr) 232px;gap:12px 30px;
+  padding:38px 0 34px;border-bottom:1px solid var(--line);position:relative}
+.pj__no{font-size:12px;letter-spacing:.2em;color:var(--ink-4);padding-top:5px}
+.pj__main{min-width:0}
+.pj__name{font-size:clamp(17px,2vw,21px);letter-spacing:.01em;color:var(--ink);font-weight:400;line-height:1.3}
+.pj__desc{margin-top:10px;font-size:13.5px;line-height:1.78;color:var(--ink-2);max-width:68ch}
+.pj__meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.pj__tag{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);
+  border:1px solid var(--line-2);padding:5px 11px}
+.pj__grp{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-4)}
+
+/* npv */
+.npv{position:relative;text-align:right;min-width:0}
+.npv__fig{font-size:clamp(20px,2.4vw,28px);font-weight:200;letter-spacing:.005em;color:var(--ink);line-height:1.15;word-break:break-word}
+.npv__fig.is-null{font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+.npv__lab{margin-top:8px;font-size:8.5px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-3)}
+.npv__btn{margin-top:14px;background:none;border:1px solid var(--line-2);padding:7px 12px;
+  font-size:8.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-2);cursor:pointer}
+.npv__btn:hover,.npv__btn:focus-visible{color:var(--ink);border-color:var(--ink)}
+.npv__btn[disabled]{opacity:.4;cursor:default}
+.npv__panel{position:absolute;top:calc(100% + 10px);right:0;z-index:40;
+  width:min(560px,calc(100vw - 2 * var(--pad-x)));text-align:left;
+  background:rgba(10,10,10,.93);border:1px solid var(--line-2);padding:22px 22px 20px;
+  opacity:0;visibility:hidden;transition:opacity .16s linear}
+@supports (backdrop-filter:blur(6px)){.npv__panel{background:rgba(10,10,10,.88);backdrop-filter:blur(8px)}}
+.npv:hover .npv__panel,.npv:focus-within .npv__panel,.npv.is-open .npv__panel{opacity:1;visibility:visible}
+.npv__panel h4{font-size:9px;letter-spacing:.4em;text-transform:uppercase;color:var(--ink-2);margin-bottom:14px}
+.npv__panel table{width:100%;border-collapse:collapse;font-size:12px}
+.npv__panel th,.npv__panel td{padding:5px 6px;text-align:right;border-bottom:1px solid var(--line);color:var(--ink-2);font-weight:300}
+.npv__panel th{font-size:8.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-2);font-weight:400}
+.npv__panel th:first-child,.npv__panel td:first-child{text-align:left}
+.npv__panel tfoot td{color:var(--ink);border-bottom:none;padding-top:10px}
+.npv__terms{display:flex;flex-wrap:wrap;gap:6px 26px;margin-bottom:14px;
+  font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2)}
+.npv__terms b{color:var(--ink);font-weight:400}
+.npv__eq{margin-top:12px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--ink-2);letter-spacing:.01em;line-height:1.7}
+
+/* bars */
+.bars{grid-column:2 / -1;margin-top:26px;display:grid;gap:22px}
+.bar__lab{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-size:8.5px;letter-spacing:.38em;text-transform:uppercase;color:var(--ink-4);margin-bottom:9px}
+.bar__seg{display:grid;gap:2px}
+.bar--14 .bar__seg{grid-template-columns:repeat(14,minmax(0,1fr))}
+.bar--5 .bar__seg{grid-template-columns:repeat(5,minmax(0,1fr))}
+.seg{min-width:0}
+.seg__c{height:16px;display:flex;align-items:center;justify-content:center;
+  font-size:8px;line-height:1;letter-spacing:.06em;font-weight:500}
+.seg__d{margin-top:6px;font-size:8.5px;letter-spacing:.06em;color:var(--ink-3);text-align:center}
+.seg__n{margin-top:3px;font-size:7px;line-height:1.35;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-4);text-align:center;word-break:break-word;hyphens:auto}
+.seg.is-next .seg__n{color:var(--ink-2)}
+.seg.is-next .seg__c{outline:1px solid var(--line-2);outline-offset:2px}
+
+/* foot */
+.foot{padding-top:120px;padding-bottom:96px;margin-top:96px;border-top:1px solid var(--line)}
+.foot p{font-size:12.5px;line-height:1.9;color:var(--ink-4);max-width:74ch}
+.foot p + p{margin-top:16px}
+.foot a{color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2)}
+.foot a:hover,.foot a:focus-visible{color:var(--ink)}
+.foot__mark{font-size:10px;letter-spacing:.5em;text-transform:uppercase;color:var(--ink);margin-bottom:28px}
+
+:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
+
+@media(max-width:1000px){
+  .method{grid-template-columns:1fr;gap:26px}
+  .pj{grid-template-columns:44px minmax(0,1fr);gap:10px 20px}
+  .npv{grid-column:2;text-align:left;margin-top:20px;position:static}
+  .npv__panel{left:0;right:0;width:auto;top:calc(100% + 10px)}
+  .bars{grid-column:2}
+  .bar--14 .bar__seg{grid-template-columns:repeat(7,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .bar--14 .bar__seg{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .bar--5 .bar__seg{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .intro{padding-top:64px}
+  .list{padding-top:64px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition:none !important}
+  .kin .c{transform:none !important;opacity:1 !important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#list">Skip to projects</a>
+
+<header class="mast">
+  <div class="mast__l">Witch of Rockdale</div>
+  <div class="mast__r">projects.black.industries</div>
+</header>
+<div class="rule"><i></i></div>
+
+<section class="hero wrap" aria-label="Title sequence">
+  <div class="vid">
+    <div class="vid__card">
+      <span>Current projects</span>
+      <i></i>
+      <b>Witch of<br>Rockdale</b>
+      <i></i>
+      <span>MMXXVI to MMXXVII</span>
+    </div>
+    <video class="vid__v" id="hero" src="hero.mp4" poster="hero.jpg" muted loop playsinline preload="metadata" tabindex="-1" aria-label="Silent looping title sequence"></video>
+  </div>
+  <p class="vid__cap">Silent loop. Title card stands in until the sequence is delivered.</p>
+</section>
+
+<section class="intro wrap">
+  <p class="eyebrow">Current projects &middot; 2026 to 2027</p>
+  <h1 class="kin" id="kin" data-text="Nineteen projects">Nineteen projects</h1>
+  <p class="lede">Every net present value on this page is a <b>TARGETED ESTIMATE</b>. Not an actual, not a projection, not a forecast. It is the number a project is being <b>aimed at</b>, computed live in your browser from inputs that are visible and checkable. Where inputs have not been set, the slot reads AWAITING INPUT and the project sorts last. Nothing is filled in to look complete.</p>
+  <p class="stamp">All figures: targeted estimate</p>
+  <div class="method">
+    <div>
+      <h3>The formula</h3>
+      <p><code>NPV = -outlay + &Sigma; CF&#8348; / (1 + r)&#8348;</code></p>
+      <p>Discount factors are computed at render, never stored. Open the working on any project and check the arithmetic by eye.</p>
+    </div>
+    <div>
+      <h3>The order</h3>
+      <p>Sorted by targeted NPV, smallest to largest. Not by group, not by number. The card numbers are inherited and deliberately non-sequential: there is no fifteen.</p>
+    </div>
+    <div>
+      <h3>The honesty</h3>
+      <p>One project carries illustrative round inputs, marked in the source as an example to be replaced. The rest are seeded empty on purpose. Invented cash flows would make this document worthless.</p>
+    </div>
+  </div>
+</section>
+
+<section class="legend wrap" aria-label="Stage colour key">
+  <p class="eyebrow">Stage key &middot; both bars</p>
+  <div class="legend__row">
+    <div class="legend__i"><span class="chip chip--passed" aria-hidden="true">P</span><span>P &nbsp;Black &nbsp;/ &nbsp;passed, already behind us</span></div>
+    <div class="legend__i"><span class="chip chip--done" aria-hidden="true">D</span><span>D &nbsp;Green &nbsp;/ &nbsp;done</span></div>
+    <div class="legend__i"><span class="chip chip--current" aria-hidden="true">C</span><span>C &nbsp;Yellow &nbsp;/ &nbsp;pending or current</span></div>
+    <div class="legend__i"><span class="chip chip--stuck" aria-hidden="true">S</span><span>S &nbsp;Red &nbsp;/ &nbsp;stuck</span></div>
+    <div class="legend__i"><span class="chip chip--future" aria-hidden="true">F</span><span>F &nbsp;White &nbsp;/ &nbsp;future milestones after the next one</span></div>
+  </div>
+</section>
+
+<main class="list wrap" id="list">
+  <div class="list__head">
+    <p class="eyebrow">Nineteen projects &middot; sorted by targeted NPV, ascending</p>
+    <p class="eyebrow">Bar one: build &middot; Bar two: capital</p>
+  </div>
+  <div id="rows"></div>
+  <noscript><p class="lede">This page computes every figure in the browser. With scripting off, the project list and its arithmetic cannot be shown.</p></noscript>
+</main>
+
+<footer class="foot wrap">
+  <p class="foot__mark">Witch of Rockdale</p>
+  <p>Every net present value shown is a targeted estimate produced from the inputs held in the source of this page. It is a planning figure. It is not an actual result, a projection, a forecast, a valuation, or a promise, and it should not be relied on as any of those. No offer of securities, units or financial products is made anywhere on this page.</p>
+  <p>Card numbering is inherited from the register and is intentionally non-sequential. Number fifteen was removed and has not been reissued.</p>
+  <p>Project register moved here from <a href="https://black.gallery">black.gallery</a>.</p>
+</footer>
+
+<script>
+/* ============================================================================
+   DATA BLOCK - THE ONLY PLACE NUMBERS LIVE
+   ----------------------------------------------------------------------------
+   Everything on this page is drawn from the list below. Nothing is hardcoded
+   anywhere else. If you want to change a figure, change it here and reload.
+
+   Each project has:
+
+     no      the card number, as text, so "04" keeps its zero
+     name    the project name
+     group   which family it belongs to
+     desc    the description
+     tag     the short status line on the right of the card
+
+     npv     the inputs for the net present value calculation:
+               outlay     money spent up front, as a POSITIVE number.
+                          The page subtracts it for you. null = not set.
+               rate       the annual discount rate as a decimal.
+                          0.1 means 10 per cent. null = not set.
+               horizon    how many years you are counting. null = not set.
+               cashflows  money coming in, one number per year, in order,
+                          starting with year 1. The list must be as long as
+                          the horizon. [] = not set.
+
+             If ANY of outlay, rate, horizon or cashflows is missing, the card
+             shows AWAITING INPUT and sorts to the bottom. That is intended.
+             Do not invent numbers to fill a gap.
+
+     bar1    the 14 stage build bar. bar2 is the 5 stage capital bar.
+               stage   which stage you are ON right now, counting from 1.
+                       1 = the first stage. 0 = not started, nothing marked.
+               stuck   list of stage numbers that are stuck, e.g. [3, 7].
+                       A stuck stage shows red no matter what else it would be.
+               dates   one date per stage, written exactly as "Aug-26".
+                       Use null for a stage with no date yet.
+   ========================================================================= */
+
+var PROJECTS = [
+
+  { no:"01", group:"Property and place",
+    name:"Two further restricted-use assets",
+    desc:"Specialised, stigmatised, and structurally mispriced for reasons the market has not priced correctly. Acquisition targets identified.",
+    tag:"Deep discount",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"02", group:"Property and place",
+    name:"140-unit co-living development",
+    desc:"Address announced on settlement. Designed so the development services its own debt from completion.",
+    tag:"Pays for itself",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"03", group:"Property and place",
+    name:"Medical: GP, psychology, psychiatry",
+    desc:"Three clinics plus mental health properties and medical centres. Conversion pathway is automatic: any venue that stops performing becomes clinical floorspace.",
+    tag:"Conversion, not capex",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  /* ------------------------------------------------------------------------
+     EXAMPLE - replace with real inputs.
+     This is the only project on the page carrying numbers. They are round on
+     purpose so nobody mistakes them for research: one million out, then two,
+     two and a half, three, three and a half and four hundred thousand back
+     over five years, discounted at ten per cent. Replace the whole npv, bar1
+     and bar2 blocks below with real inputs, or empty them out again.
+     ------------------------------------------------------------------------ */
+  { no:"04", group:"Retail and trade",
+    name:"Diamond store relaunch",
+    desc:"The Pitt Street store returns, this time in Rockdale.",
+    tag:"Zero cost, zero risk",
+    npv:{ outlay:1000000, rate:0.10, horizon:5,
+          cashflows:[200000, 250000, 300000, 350000, 400000] },
+    bar1:{ stage:6, stuck:[],
+           dates:["Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26","Jan-27","Feb-27"] },
+    bar2:{ stage:2, stuck:[2],
+           dates:["Mar-26","Jun-26","Sep-26","Mar-27","Jun-27"] } },
+
+  { no:"05", group:"Retail and trade",
+    name:"Surat, Gujarat store in tandem",
+    desc:"A fifty-fifty collaboration. Each side gains a purchasing office and a retail branch in the other's market at no capital outlay.",
+    tag:"Free by structure",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"06", group:"Retail and trade",
+    name:"Backlit onyx display building",
+    desc:"Three storeys of illuminated stone, plus interior design services. The first practice in Sydney built specifically around raising valuation by genuine means rather than staging.",
+    tag:"Owned stock",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"07", group:"Media and record",
+    name:"Record label and film production",
+    desc:"Thirty-two tracks already distributed across thirty-two platforms. The catalogue exists before the label does.",
+    tag:"Paid in time only",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"08", group:"Property services and capital",
+    name:"Real estate agency",
+    desc:"In collaboration with a Class 1 licensed agency.",
+    tag:"Free by structure",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"09", group:"Property services and capital",
+    name:"Property fund",
+    desc:"Fixed unit trust. Structure established, founders in place. In formation, no offer open.",
+    tag:"Established",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"10", group:"Intelligence augmentation",
+    name:"Witchcraft AI and Witch Codes",
+    desc:"Our own endpoint, CLI wrapper, desktop client and repackager, all running the native A.T.H.E.N.A. frame.",
+    tag:"Free",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"11", group:"Intelligence augmentation",
+    name:"Witch Pics",
+    desc:"Image, audio and video generation on the same harness.",
+    tag:"Free",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"12", group:"Intelligence augmentation",
+    name:"Garter AI",
+    desc:"H.E.R.A. units, with Artemis, Thalia and the rest. Agentic workers that arrive already holding their own phone number, email, messaging, skills, connectors, the Athena frame, and the garter.app mobile client.",
+    tag:"Free",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"13", group:"Intelligence augmentation",
+    name:"Witchcraft AI, the H.E.C.A.T.E. lane",
+    desc:"The companion architecture rather than the executive one.",
+    tag:"Free",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"14", group:"Intelligence augmentation",
+    name:"Witchcraft Love",
+    desc:"Companion application, site and agent.",
+    tag:"Free",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  /* There is no project 15. It was removed from the register and the number
+     has not been reissued. Do not renumber the cards to close the gap. */
+
+  { no:"16", group:"Intelligence augmentation",
+    name:"Hecatech Augmentations",
+    desc:"Robotics. witchcraft.living. Collaboration talks underway.",
+    tag:"In discussion",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"17", group:"Property services and capital",
+    name:"Theta-speedrunning quant fund",
+    desc:"Hedged risk, with a partner holding a RAC under an AFSL. Targets high-return low-risk positions that are only available at speeds no human desk can execute. Machine assistance is what makes that ordinary rather than heroic.",
+    tag:"Partner-licensed",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"18", group:"Property and place",
+    name:"Streamer Sanctuary",
+    desc:"2.2 Gbps fibre, hotel by the hour, and a builders, founders and AI think-tank lounge. Certain rooms are licensed for adult services so our OnlyFans and adult-streaming sisters are accommodated rather than displaced.",
+    tag:"Existing floorspace",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"19", group:"Research and public",
+    name:"The research arm and non-profit",
+    desc:"Three heads: neurodiversity and support for stigmatised people, poverty reduction, suicide reduction. No dividends, ever. Exponential gain is still the target, it simply is not distributed.",
+    tag:"No dividends",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } },
+
+  { no:"20", group:"Research and public",
+    name:"Cognitive",
+    desc:"For-profit outlier support and research, plus a daily publication of the thousand deepest discounts in Sydney, from a phone marked down a thousand dollars to a rezoned site marked down three million. Tiered at the top thousand, hundred, ten and one. Machine-assisted, but mostly Jesse-assisted, who grew up broke and is formidable at it.",
+    tag:"Zero cost, automated",
+    npv:{ outlay:null, rate:null, horizon:null, cashflows:[] },
+    bar1:{ stage:0, stuck:[], dates:[null,null,null,null,null,null,null,null,null,null,null,null,null,null] },
+    bar2:{ stage:0, stuck:[], dates:[null,null,null,null,null] } }
+
+];
+
+/* Stage names. Order and wording are fixed. Do not reorder. */
+var BAR1_STAGES = ["Idea","preparation","self-check","devils advocate","double-check",
+  "foot in water","triple-check","hail mary","YOLO","milestone 1","milestone 2",
+  "milestone 3","milestone 4","Speedrun Complete"];
+var BAR2_STAGES = ["pre-seed funding","seed funding","fully funded","Cashout","Kept/Sold"];
+
+/* ===================== END OF DATA BLOCK ================================= */
+
+(function () {
+  "use strict";
+
+  var money = new Intl.NumberFormat("en-AU", {
+    style: "currency", currency: "AUD", maximumFractionDigits: 0
+  });
+  var money2 = new Intl.NumberFormat("en-AU", {
+    style: "currency", currency: "AUD", minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+
+  /* NPV engine. Returns null when inputs are incomplete. */
+  function npvOf(n) {
+    if (!n) { return null; }
+    if (n.outlay === null || n.outlay === undefined) { return null; }
+    if (n.rate === null || n.rate === undefined) { return null; }
+    if (n.horizon === null || n.horizon === undefined || n.horizon < 1) { return null; }
+    if (!Array.isArray(n.cashflows) || n.cashflows.length === 0) { return null; }
+    if (n.cashflows.length !== n.horizon) { return null; }
+
+    var rows = [], sum = 0, t, cf, df, pv;
+    for (t = 1; t <= n.horizon; t++) {
+      cf = Number(n.cashflows[t - 1]);
+      df = 1 / Math.pow(1 + n.rate, t);          /* computed here, never stored */
+      pv = cf * df;
+      sum += pv;
+      rows.push({ t: t, cf: cf, df: df, pv: pv });
+    }
+    return {
+      rate: n.rate, horizon: n.horizon, outlay: n.outlay,
+      rows: rows, sumPV: sum, npv: (-n.outlay) + sum
+    };
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* state machine, 1-based stage numbers */
+  function stateAt(i, stage, stuck) {
+    var n = i + 1;
+    if (stuck && stuck.indexOf(n) !== -1) { return "stuck"; }
+    if (!stage || stage < 1) { return "future"; }
+    if (n < stage - 1) { return "passed"; }
+    if (n === stage - 1) { return "done"; }
+    if (n === stage) { return "current"; }
+    return "future";
+  }
+  var LETTER = { passed: "P", done: "D", current: "C", stuck: "S", future: "F" };
+  var WORD = { passed: "passed", done: "done", current: "pending or current",
+               stuck: "stuck", future: "future" };
+
+  function barHTML(cfg, stages, title, kind) {
+    var out = '<div class="bar bar--' + kind + '">';
+    out += '<div class="bar__lab"><span>' + esc(title) + '</span><span>' +
+           (cfg.stage && cfg.stage >= 1
+             ? "Stage " + cfg.stage + " of " + stages.length + ", " + esc(stages[cfg.stage - 1])
+             : "Stage not set") +
+           '</span></div><div class="bar__seg">';
+    for (var i = 0; i < stages.length; i++) {
+      var st = stateAt(i, cfg.stage, cfg.stuck);
+      var isNext = (cfg.stage >= 1 && i + 1 === cfg.stage + 1);
+      var d = cfg.dates && cfg.dates[i] ? cfg.dates[i] : "--";
+      out += '<div class="seg' + (isNext ? " is-next" : "") + '">' +
+               '<div class="seg__c chip--' + st + '" title="' + esc(stages[i]) + ", " + WORD[st] +
+               ', ' + esc(d) + '"><span class="sr">' + LETTER[st] + '</span></div>' +
+               '<div class="seg__d">' + esc(d) + '</div>' +
+               '<div class="seg__n">' + esc(stages[i]) + '</div>' +
+             '</div>';
+    }
+    return out + "</div></div>";
+  }
+
+  function workingHTML(w, id, name) {
+    var h = '<div class="npv__panel" id="' + id + '" role="region" aria-label="Net present value working for ' + esc(name) + '">';
+    h += '<h4>Working &middot; targeted estimate</h4>';
+    h += '<div class="npv__terms">' +
+           '<span>Discount rate <b>' + (w.rate * 100).toFixed(2) + '%</b></span>' +
+           '<span>Horizon <b>' + w.horizon + ' years</b></span>' +
+           '<span>Initial outlay <b>-' + money.format(w.outlay) + '</b></span>' +
+         '</div>';
+    h += '<table><thead><tr><th scope="col">Year</th><th scope="col">Cash flow</th>' +
+         '<th scope="col">Discount factor</th><th scope="col">Present value</th></tr></thead><tbody>';
+    for (var i = 0; i < w.rows.length; i++) {
+      var r = w.rows[i];
+      h += '<tr><td>' + r.t + '</td><td>' + money.format(r.cf) + '</td><td>' +
+           r.df.toFixed(4) + '</td><td>' + money2.format(r.pv) + '</td></tr>';
+    }
+    h += '</tbody><tfoot>' +
+         '<tr><td colspan="3">Sum of present values</td><td>' + money2.format(w.sumPV) + '</td></tr>' +
+         '<tr><td colspan="3">Less initial outlay</td><td>-' + money2.format(w.outlay) + '</td></tr>' +
+         '<tr><td colspan="3">Net present value, targeted estimate</td><td>' + money2.format(w.npv) + '</td></tr>' +
+         '</tfoot></table>';
+    h += '<p class="npv__eq">DF&#8348; = 1 / (1 + ' + w.rate + ')^t &nbsp;&middot;&nbsp; PV&#8348; = CF&#8348; &times; DF&#8348; &nbsp;&middot;&nbsp; NPV = -outlay + &Sigma; PV&#8348;</p>';
+    return h + "</div>";
+  }
+
+  function cardHTML(p, w) {
+    var id = "w-" + p.no;
+    var h = '<article class="pj" id="pj-' + p.no + '">';
+    h += '<div class="pj__no">' + esc(p.no) + "</div>";
+    h += '<div class="pj__main"><h2 class="pj__name">' + esc(p.name) + "</h2>";
+    h += '<p class="pj__desc">' + esc(p.desc) + "</p>";
+    h += '<p class="pj__meta"><span class="pj__tag">' + esc(p.tag) + "</span>" +
+         '<span class="pj__grp">' + esc(p.group) + "</span></p></div>";
+
+    h += '<div class="npv">';
+    if (w) {
+      h += '<div class="npv__fig">' + money.format(w.npv) + "</div>";
+      h += '<div class="npv__lab">Targeted estimate</div>';
+      h += '<button class="npv__btn" type="button" aria-expanded="false" aria-controls="' + id + '">Show working</button>';
+      h += workingHTML(w, id, p.name);
+    } else {
+      h += '<div class="npv__fig is-null">Awaiting input</div>';
+      h += '<div class="npv__lab">Targeted estimate</div>';
+      h += '<button class="npv__btn" type="button" disabled>No inputs set</button>';
+    }
+    h += "</div>";
+
+    h += '<div class="bars">' +
+         barHTML(p.bar1, BAR1_STAGES, "Build", "14") +
+         barHTML(p.bar2, BAR2_STAGES, "Capital", "5") +
+         "</div>";
+    return h + "</article>";
+  }
+
+  /* sort: computable NPVs ascending, then the rest in register order */
+  var withN = [], without = [], i, w;
+  for (i = 0; i < PROJECTS.length; i++) {
+    w = npvOf(PROJECTS[i].npv);
+    if (w) { withN.push({ p: PROJECTS[i], w: w }); }
+    else { without.push({ p: PROJECTS[i], w: null }); }
+  }
+  withN.sort(function (a, b) { return a.w.npv - b.w.npv; });
+  var ordered = withN.concat(without);
+
+  var html = "";
+  for (i = 0; i < ordered.length; i++) { html += cardHTML(ordered[i].p, ordered[i].w); }
+  document.getElementById("rows").innerHTML = html;
+
+  /* keyboard: pin the working panel open, escape closes it */
+  document.getElementById("rows").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".npv__btn") : null;
+    if (!b || b.disabled) { return; }
+    var box = b.parentNode, open = box.classList.toggle("is-open");
+    b.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") { return; }
+    var o = document.querySelectorAll(".npv.is-open");
+    for (var k = 0; k < o.length; k++) {
+      o[k].classList.remove("is-open");
+      var b = o[k].querySelector(".npv__btn");
+      if (b) { b.setAttribute("aria-expanded", "false"); b.blur(); }
+    }
+  });
+
+  /* hero video: show only if it actually loads, otherwise the title card stands */
+  var v = document.getElementById("hero");
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function liveVideo() {
+    v.classList.add("is-live");
+    if (!reduce) { var pr = v.play(); if (pr && pr.catch) { pr.catch(function () {}); } }
+  }
+  v.addEventListener("loadeddata", liveVideo);
+  var poster = new Image();
+  poster.onload = function () { v.classList.add("is-live"); };
+  poster.src = "hero.jpg";
+
+  /* one motion title, one rAF, paused when hidden or off screen */
+  var kin = document.getElementById("kin");
+  var text = kin.getAttribute("data-text"), words = text.split(" "), frag = "";
+  for (i = 0; i < words.length; i++) {
+    frag += '<span class="w">';
+    for (var j = 0; j < words[i].length; j++) {
+      frag += '<span class="c">' + esc(words[i][j]) + "</span>";
+    }
+    frag += "</span>";
+  }
+  kin.innerHTML = frag;
+  kin.setAttribute("aria-label", text);          /* letters are decorative markup */
+  for (i = 0; i < kin.children.length; i++) { kin.children[i].setAttribute("aria-hidden", "true"); }
+  var cells = kin.querySelectorAll(".c");
+
+  if (!reduce) {
+    var px = 0.5, tick = 0, running = false, visible = true, raf = 0;
+    document.addEventListener("pointermove", function (e) {
+      px = e.clientX / Math.max(1, window.innerWidth);
+    }, { passive: true });
+
+    var loop = function () {
+      raf = 0;
+      if (!running) { return; }
+      tick += 0.016;
+      var scroll = Math.min(1, (window.scrollY || 0) / 700);
+      for (var k = 0; k < cells.length; k++) {
+        var pos = cells.length > 1 ? k / (cells.length - 1) : 0;
+        var near = 1 - Math.min(1, Math.abs(pos - px) * 2.6);
+        var y = Math.sin(tick * 1.1 + k * 0.42) * 3 - near * 12 - scroll * 6;
+        cells[k].style.transform = "translate3d(0," + y.toFixed(2) + "px,0)";
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    var sync = function () {
+      var want = visible && !document.hidden;
+      if (want && !running) { running = true; if (!raf) { raf = requestAnimationFrame(loop); } }
+      else if (!want && running) { running = false; if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    };
+    document.addEventListener("visibilitychange", sync);
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (en) {
+        visible = en[0].isIntersecting; sync();
+      }, { threshold: 0 }).observe(kin);
+    }
+    sync();
+  }
+})();
+</script>
+</body>
+</html>
